@@ -1,0 +1,146 @@
+
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ROI Viewer (Local)</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; }
+    h1 { font-size: 20px; }
+    .row { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+    input, select, button { padding: 6px 8px; font-size: 14px; }
+    pre { background: #f7f7f7; padding: 12px; border-radius: 8px; overflow: auto; }
+    .card { border: 1px solid #ddd; padding: 12px; border-radius: 8px; margin-bottom: 12px; }
+    .muted { color: #666; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <h1>ROI Workbook (Local)</h1>
+  <div class="muted">This demo UI talks to the local API provided by <code>roi_local_api.py</code>.</div>
+
+  <div class="card">
+    <div class="row">
+      <button id="btnSheets">List Sheets</button>
+      <select id="sheetSelect"></select>
+      <button id="btnSheetInfo">Get Sheet Info</button>
+    </div>
+    <pre id="outSheets"></pre>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <label>Cell: </label>
+      <input id="cellA1" placeholder="B7" style="width:80px" />
+      <button id="btnGetCell">Get Cell</button>
+      <input id="cellValue" placeholder="new value" />
+      <button id="btnSetCell">Set Cell</button>
+    </div>
+    <pre id="outCell"></pre>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <label>Range: </label>
+      <input id="rangeTop" placeholder="A1" style="width:80px" />
+      <input id="rangeBottom" placeholder="C5" style="width:80px" />
+      <button id="btnGetRange">Get Range</button>
+    </div>
+    <pre id="outRange"></pre>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <button id="btnTables">List Tables</button>
+      <input id="tableName" placeholder="Table1" />
+      <button id="btnTable">Get Table</button>
+      <button id="btnTableRows">Get Table Rows</button>
+    </div>
+    <pre id="outTables"></pre>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <button id="btnSources">Find Sources/Methods</button>
+    </div>
+    <pre id="outSources"></pre>
+  </div>
+
+  <script>
+    const api = (p) => fetch(p).then(r => r.json());
+
+    const sheetSelect = document.getElementById('sheetSelect');
+    const outSheets = document.getElementById('outSheets');
+    const outCell = document.getElementById('outCell');
+    const outRange = document.getElementById('outRange');
+    const outTables = document.getElementById('outTables');
+    const outSources = document.getElementById('outSources');
+
+    document.getElementById('btnSheets').onclick = async () => {
+      const sheets = await api('/api/sheets');
+      outSheets.textContent = JSON.stringify(sheets, null, 2);
+      sheetSelect.innerHTML = sheets.map(s => `<option value="${s}">${s}</option>`).join('');
+    };
+
+    document.getElementById('btnSheetInfo').onclick = async () => {
+      const name = sheetSelect.value;
+      const info = await api('/api/sheet?name=' + encodeURIComponent(name));
+      outSheets.textContent = JSON.stringify(info, null, 2);
+    };
+
+    document.getElementById('btnGetCell').onclick = async () => {
+      const name = sheetSelect.value;
+      const a1 = document.getElementById('cellA1').value || 'A1';
+      const res = await api(`/api/cell?sheet=${encodeURIComponent(name)}&a1=${encodeURIComponent(a1)}`);
+      outCell.textContent = JSON.stringify(res, null, 2);
+    };
+
+    document.getElementById('btnSetCell').onclick = async () => {
+      const name = sheetSelect.value;
+      const a1 = document.getElementById('cellA1').value || 'A1';
+      const value = document.getElementById('cellValue').value;
+      const res = await fetch('/api/cell', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({sheet: name, a1, value})
+      }).then(r => r.json());
+      outCell.textContent = JSON.stringify(res, null, 2);
+    };
+
+    document.getElementById('btnGetRange').onclick = async () => {
+      const name = sheetSelect.value;
+      const top = document.getElementById('rangeTop').value || 'A1';
+      const bottom = document.getElementById('rangeBottom').value || 'C5';
+      const res = await api(`/api/range?sheet=${encodeURIComponent(name)}&top=${encodeURIComponent(top)}&bottom=${encodeURIComponent(bottom)}`);
+      outRange.textContent = JSON.stringify(res, null, 2);
+    };
+
+    document.getElementById('btnTables').onclick = async () => {
+      const name = sheetSelect.value;
+      const res = await api('/api/tables?sheet=' + encodeURIComponent(name));
+      outTables.textContent = JSON.stringify(res, null, 2);
+    };
+
+    document.getElementById('btnTable').onclick = async () => {
+      const name = document.getElementById('tableName').value;
+      if (!name) { alert('Enter a table name'); return; }
+      const sheet = sheetSelect.value;
+      const res = await api(`/api/table?name=${encodeURIComponent(name)}&sheet=${encodeURIComponent(sheet)}`);
+      outTables.textContent = JSON.stringify(res, null, 2);
+    };
+
+    document.getElementById('btnTableRows').onclick = async () => {
+      const name = document.getElementById('tableName').value;
+      if (!name) { alert('Enter a table name'); return; }
+      const sheet = sheetSelect.value;
+      const res = await api(`/api/table_rows?name=${encodeURIComponent(name)}&sheet=${encodeURIComponent(sheet)}`);
+      outTables.textContent = JSON.stringify(res, null, 2);
+    };
+
+    document.getElementById('btnSources').onclick = async () => {
+      const res = await api('/api/sources');
+      outSources.textContent = JSON.stringify(res, null, 2);
+    };
+  </script>
+</body>
+</html>

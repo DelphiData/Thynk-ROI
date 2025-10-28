@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Thynk Health | ROI Modeler</title>
+
+  <!-- Icons -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+  <!-- Styles -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="app">
+  <header class="header">
+    <h1 class="title">Workflow Modeler</h1>
+    <p class="subtitle">Toggle modules, tune assumptions, and compare a Hospital-Managed program vs Thynk Managed vs DIY EHR (FTE + efficiency model).</p>
+  </header>
+
+  <main class="container">
+    <!-- Core Assumptions -->
+    <section class="card">
+      <h2 class="card-title">
+        <i class="fa-solid fa-sliders"></i>
+        Core Assumptions
+      </h2>
+
+      <div class="grid two">
+        <div class="field">
+          <label for="annualCt">Annual CT Studies</label>
+          <input id="annualCt" type="number" value="400000" min="0">
+        </div>
+
+        <div class="field">
+          <label for="supportModel">Support Model</label>
+          <div class="model-pills" id="modelPicker">
+            <button data-model="hospital" class="pill selected" aria-pressed="true">Hospital Managed</button>
+            <button data-model="thynk" class="pill" aria-pressed="false">Thynk Managed Service</button>
+            <button data-model="diy" class="pill" aria-pressed="false">DIY EHR Build</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="blueRate">“Blue” Rate (% already managed)</label>
+          <input id="blueRate" type="number" value="12" min="0" max="100">
+        </div>
+
+        <div class="field">
+          <label for="overhead">Staff Overhead (%)</label>
+          <input id="overhead" type="number" value="20" min="0" max="200">
+        </div>
+      </div>
+
+      <div class="grid four kpis" id="kpis">
+        <div class="kpi">
+          <div class="kpi-label">HOSPITAL COST</div>
+          <div class="kpi-value" id="hospitalCost">$—</div>
+          <div class="kpi-foot"><span id="hospitalFte">—</span> FTE</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">THYNK MANAGED</div>
+          <div class="kpi-value" id="thynkCost">$—</div>
+          <div class="kpi-foot"><span id="thynkFte">—</span> FTE (fractional)</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">DIY EHR</div>
+          <div class="kpi-value" id="diyCost">$—</div>
+          <div class="kpi-foot"><span id="diyFte">—</span> FTE + platform</div>
+        </div>
+        <div class="kpi savings">
+          <div class="kpi-label">SAVINGS</div>
+          <div class="kpi-value" id="savings">$—</div>
+          <div class="kpi-foot">
+            <span id="savingsTarget">vs selected</span>
+            <button class="ci-chip" id="ciChip" title="Click for confidence interval details" aria-haspopup="dialog">
+              95% CI
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button id="recalc" class="btn primary">
+          <i class="fa-solid fa-rotate-right"></i> Recalculate
+        </button>
+        <span class="hint">
+          Confidence interval estimated via Monte Carlo across minutes-per-severity, wage, and “Blue” percent. Click the “95% CI” chip for details.
+        </span>
+      </div>
+    </section>
+
+    <!-- Workflow -->
+    <section class="card">
+      <h2 class="card-title">
+        <i class="fa-solid fa-diagram-project"></i>
+        Workflow
+      </h2>
+      <div class="workflow">
+        <div class="node"><i class="fa-regular fa-folder"></i><div>Ingestion</div></div>
+        <i class="fa-solid fa-chevron-right chevron"></i>
+        <div class="node purple"><i class="fa-solid fa-brain"></i><div>Thynk Intelligence</div></div>
+        <i class="fa-solid fa-chevron-right chevron"></i>
+        <div class="node lilac"><i class="fa-solid fa-headset"></i><div>Thynk Team</div></div>
+        <i class="fa-solid fa-chevron-right chevron"></i>
+        <div class="node green"><i class="fa-solid fa-circle-check"></i><div>Loop Closed</div></div>
+      </div>
+    </section>
+
+    <!-- Time per Severity -->
+    <section class="card">
+      <h2 class="card-title">
+        <i class="fa-regular fa-clock"></i>
+        Time per Severity (mins)
+      </h2>
+      <div class="grid four">
+        <div class="field">
+          <label>Blue</label>
+          <input id="tBlue" type="number" value="1" min="0">
+        </div>
+        <div class="field">
+          <label>Green</label>
+          <input id="tGreen" type="number" value="2" min="0">
+        </div>
+        <div class="field">
+          <label>Amber</label>
+          <input id="tAmber" type="number" value="5" min="0">
+        </div>
+        <div class="field">
+          <label>Red</label>
+          <input id="tRed" type="number" value="10" min="0">
+        </div>
+      </div>
+      <p class="muted">Applied per-module to Red/Amber/Green plus “Blue” (already-managed) population.</p>
+    </section>
+
+    <!-- Cost knobs -->
+    <section class="card">
+      <h2 class="card-title">
+        <i class="fa-solid fa-dollar-sign"></i>
+        Cost Inputs
+      </h2>
+      <div class="grid three">
+        <div class="field">
+          <label>Navigator wage ($/hr)</label>
+          <input id="wage" type="number" value="40" min="0" step="1">
+        </div>
+        <div class="field">
+          <label>Thynk platform fee ($/case, actionable)</label>
+          <input id="thynkFee" type="number" value="1.25" min="0" step="0.01">
+        </div>
+        <div class="field">
+          <label>DIY EHR platform amortization ($/yr)</label>
+          <input id="diyAmort" type="number" value="250000" min="0" step="1000">
+        </div>
+      </div>
+      <div class="grid three">
+        <div class="field">
+          <label>DIY EHR build (one-time)</label>
+          <input id="diyBuild" type="number" value="750000" min="0" step="1000">
+        </div>
+        <div class="field">
+          <label>DIY EHR maintenance ($/yr)</label>
+          <input id="diyMaint" type="number" value="150000" min="0" step="1000">
+        </div>
+        <div class="field">
+          <label>DIY team (FTE)</label>
+          <input id="diyFteInput" type="number" value="4" min="0" step="0.25">
+        </div>
+      </div>
+      <p class="muted">Navigation FTE includes overhead. Thynk fee applies only to actionable (non-Blue) cases; DIY includes residual manual minutes plus internal platform & team costs.</p>
+    </section>
+
+    <!-- Annual Volumes & Costs -->
+    <section class="card">
+      <h2 class="card-title">
+        <i class="fa-solid fa-chart-line"></i>
+        Annual Volumes &amp; Costs
+      </h2>
+
+      <div class="table-wrap">
+        <table class="table" id="moduleTable">
+          <thead>
+            <tr>
+              <th>Module</th>
+              <th class="num">Red</th>
+              <th class="num">Amber</th>
+              <th class="num">Green</th>
+              <th class="num">Blue</th>
+              <th class="num">Total</th>
+              <th class="num">Hospital Cost</th>
+              <th class="num">Thynk Cost</th>
+              <th class="num">Use</th>
+            </tr>
+          </thead>
+          <tbody id="moduleBody"><!-- populated by app.js --></tbody>
+          <tfoot>
+            <tr>
+              <td class="sum">Totals</td>
+              <td class="num sum" id="sumRed">0</td>
+              <td class="num sum" id="sumAmber">0</td>
+              <td class="num sum" id="sumGreen">0</td>
+              <td class="num sum" id="sumBlue">0</td>
+              <td class="num sum" id="sumTotal">0</td>
+              <td class="num sum" id="sumHosp">$0</td>
+              <td class="num sum" id="sumThynk">$0</td>
+              <td class="num sum">—</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <div class="actions">
+        <button id="selectAll" class="btn">Select All</button>
+        <button id="clearAll" class="btn">Clear All</button>
+      </div>
+    </section>
+
+    <!-- Sources & Assumptions -->
+    <section class="card">
+      <h2 class="card-title"><i class="fa-solid fa-clipboard-list"></i> Assumptions & Sources</h2>
+      <ul class="assumptions">
+        <li><strong>Primary source:</strong> <em>ThynkHealth Internal Validation Trial — “ROI tool for Joey.xlsx”</em>. Default module mix, severity distribution patterns, and example totals seeded from this workbook (e.g., Incidental Pulmonary Nodule and LCS rows in the screenshot you provided).</li>
+        <li><strong>Navigation cost (in-house):</strong> Navigator wage × (1 + overhead) × minutes-per-severity × volume. Defaults: wage = $40/hr; overhead = 20% (editable).</li>
+        <li><strong>Thynk Managed:</strong> Minutes reduced via automation (module-specific efficiency) + platform fee per actionable case (non-Blue). Fractional FTE shown in KPI “Thynk FTE”.</li>
+        <li><strong>DIY EHR:</strong> Residual manual minutes (lower efficiency than Thynk) + annualized build & maintenance + internal platform amortization + DIY team FTE (fully loaded). These are editable above.</li>
+        <li><strong>Confidence interval:</strong> Monte Carlo (n=500 by default) with ±15% stdev on minutes, ±10% on wage, and ±5 percentage-points on “Blue” rate to display a 95% CI for savings. Click the “95% CI” pill to see the run details for the current inputs.</li>
+        <li><strong>DIY vs EHR in-house build, navigation costs:</strong> Parameters mirror the two other models you mentioned (navigation cost and Us vs EHR in-house build). Controls above let you match those scenarios for apples-to-apples ROI.</li>
+      </ul>
+    </section>
+  </main>
+
+  <!-- CI Modal -->
+  <dialog id="ciModal" class="modal">
+    <form method="dialog" class="modal-card">
+      <h3 class="modal-title"><i class="fa-solid fa-signal"></i> Savings Confidence Interval (95%)</h3>
+      <div class="modal-body">
+        <div id="ciSummary">—</div>
+        <hr>
+        <ul class="assumptions tight">
+          <li><strong>Method:</strong> Monte Carlo with 500 draws. Inputs varied: minutes-per-severity (σ=15%), navigator wage (σ=10%), Blue% (σ=5pp).</li>
+          <li><strong>Why:</strong> These three inputs drive the widest variance across the workbook tabs in the <em>ThynkHealth Internal Validation Trial — “ROI tool for Joey.xlsx”</em>.</li>
+          <li><strong>Tip:</strong> Adjust Time per Severity, wage, or Blue% and click Recalculate to update this interval.</li>
+        </ul>
+      </div>
+      <div class="modal-actions">
+        <button class="btn">Close</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- App -->
+  <script src="app.js"></script>
+</body>
+</html>

@@ -89,26 +89,82 @@ const EFFICIENCY = {
 };
 
 // ---------- Module Catalog ----------
-// Each module defines: name, shareOfCT (portion of annual CT that becomes this module's pool),
-// severityMix (for actionable R/A/G; Blue is added using Blue%), and enabled flag.
-// The two seeded modules reflect the screenshot rows.
+// ---------- Module Catalog (inferred + seeded) ----------
+// Each module defines:
+// - name: Display name
+// - shareOfCT: Portion of annual CT studies routed to this module (0–1)
+// - severityMix: Distribution within actionable cases (Red/Amber/Green). Sums ~0.90 by design
+//   to play well with the editable global Blue% and still leave a small buffer.
+// - enabled: default ON
 let MODULES = [
+  // Seeded from screenshot / workbook alignment
   {
     key: 'ipn',
     name: 'Incidental Pulmonary Nodule (Fleischner)',
-    shareOfCT: 0.135, // tuned so that with 400k CT & 12% Blue you match ~54k total in screenshot
-    severityMix: { red: 0.0326, amber: 0.1303, green: 0.7160 }, // yields roughly 1,760 / 7,040 / 38,720 actionable given totals
+    shareOfCT: 0.135, // ~54k at 400k CT
+    severityMix: { red: 0.033, amber: 0.130, green: 0.716 }, // screenshot-tuned
     enabled: true
   },
   {
     key: 'lcs',
     name: 'Lung Cancer Screening (Lung-RADS)',
-    shareOfCT: 0.105, // tuned to ~42k total at 400k CT
-    severityMix: { red: 0.0335, amber: 0.1257, green: 0.7208 },
+    shareOfCT: 0.105, // ~42k at 400k CT
+    severityMix: { red: 0.034, amber: 0.126, green: 0.721 }, // screenshot-tuned
     enabled: true
   },
-  // Add more modules here as needed; the UI and math will adapt automatically.
+
+  // Inferred, common follow-up programs (patterned after workbook logic & guidelines)
+  {
+    key: 'thyroid',
+    name: 'Thyroid Nodule (ACR TI-RADS)',
+    shareOfCT: 0.090, // ~36k
+    severityMix: { red: 0.025, amber: 0.110, green: 0.760 },
+    enabled: true
+  },
+  {
+    key: 'pancyst',
+    name: 'Pancreatic Cyst (Fukuoka / ACR)',
+    shareOfCT: 0.050, // ~20k
+    severityMix: { red: 0.040, amber: 0.140, green: 0.720 },
+    enabled: true
+  },
+  {
+    key: 'adrenal',
+    name: 'Adrenal Incidentaloma',
+    shareOfCT: 0.035, // ~14k
+    severityMix: { red: 0.028, amber: 0.120, green: 0.740 },
+    enabled: true
+  },
+  {
+    key: 'aaa',
+    name: 'Abdominal Aortic Aneurysm (AAA) Surveillance',
+    shareOfCT: 0.040, // ~16k
+    severityMix: { red: 0.030, amber: 0.115, green: 0.745 },
+    enabled: true
+  },
+  {
+    key: 'liver',
+    name: 'Incidental Liver Lesion (LI-RADS-driven follow-up)',
+    shareOfCT: 0.045, // ~18k
+    severityMix: { red: 0.032, amber: 0.128, green: 0.740 },
+    enabled: true
+  },
+  {
+    key: 'renal',
+    name: 'Renal Mass / Incidental Renal Lesion',
+    shareOfCT: 0.030, // ~12k
+    severityMix: { red: 0.035, amber: 0.135, green: 0.720 },
+    enabled: true
+  },
+  {
+    key: 'ed_followup',
+    name: 'ED Positive Finding — Outpatient Follow-up',
+    shareOfCT: 0.060, // ~24k (catch-all navigation queue)
+    severityMix: { red: 0.050, amber: 0.150, green: 0.700 },
+    enabled: true
+  },
 ];
+
 
 // ---------- Table Rendering ----------
 const tbody = $('#moduleBody');
